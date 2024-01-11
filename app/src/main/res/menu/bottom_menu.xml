@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/home"
+        android:enabled="true"
+        android:icon="@drawable/ic_home"
+        android:title="홈"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/news"
+        android:enabled="true"
+        android:icon="@drawable/ic_news"
+        android:title="동네생활"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/near"
+        android:enabled="true"
+        android:icon="@drawable/ic_near"
+        android:title="내 근처"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/chat"
+        android:enabled="true"
+        android:icon="@drawable/ic_chat"
+        android:title="채팅"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/mypage"
+        android:enabled="true"
+        android:icon="@drawable/ic_mypage"
+        android:title="나의 당근"
+        app:showAsAction="always" />
+
+</menu>
