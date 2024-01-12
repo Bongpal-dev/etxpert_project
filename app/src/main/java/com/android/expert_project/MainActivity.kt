@@ -55,83 +55,47 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun MainAdapter.initLongClickItem() {
-        itemLongClick = object : MainAdapter.ItemLongClick {
-            override fun longClick(item: Item) {
-                val listener = object : DialogInterface.OnClickListener {
-                    override fun onClick(dialog: DialogInterface?, which: Int) {
-                        when (which) {
-                            DialogInterface.BUTTON_POSITIVE -> {
-                                Items.removeUser(item.userName)
-                                binding.mainRecyclerView.adapter?.notifyDataSetChanged()
-                            }
-
-                            DialogInterface.BUTTON_NEGATIVE -> {
-                                return
-                            }
-                        }
-                    }
-                }
-                var builder = AlertDialog.Builder(this@MainActivity)
-
-                with(builder) {
-                    setTitle("상품삭제")
-                    setMessage("상품을 정말로 삭제하시겠습니까?")
-                    setIcon(R.drawable.chat)
-                    setPositiveButton("확인", listener)
-                    setNegativeButton("취소", listener)
-                    show()
+        object : MainAdapter.ItemLongClick {
+            override fun onLongClick(item: Item, position: Int) {
+                buildDialog(
+                    "상품삭제",
+                    "상품을 정말로 삭제하시겠습니까?",
+                    "확인",
+                    "취소"
+                ) {
+                    Items.removeUser(item.userName)
+                    binding.mainRecyclerView.adapter?.notifyDataSetChanged()
                 }
             }
-        }
+        }.also { itemLongClick = it }
     }
 
     fun MainAdapter.initClickItem() {
-        val intent = Intent(this@MainActivity, DetailActivity::class.java)
-
-        itemClick = object : MainAdapter.ItemClick {
+        object : MainAdapter.ItemClick {
             override fun onClick(view: View, position: Int) {
+                val intent = Intent(this@MainActivity, DetailActivity::class.java)
+
                 intent.putExtra(EXTRA_ITEM, Items.getIndex(position))
                 startActivity(intent)
             }
-        }
+        }.also { itemClick = it }
     }
 
     fun initNotiButton() {
         binding.btnAlarm.setOnClickListener {
-            notification("new-keyword", "Channel New Keyword")
+            callNotification("new-keyword", "Channel New Keyword")
         }
     }
 
-    fun notification(id: String, name: String) {
+    fun callNotification(id: String, name: String) {
         val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-        val builder: NotificationCompat.Builder
-
-        checkPermission()
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val importance = NotificationManager.IMPORTANCE_DEFAULT
-            val channel = NotificationChannel(id, name, importance).apply {
-                val uri: Uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-                val audioAttributes = AudioAttributes.Builder()
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                    .setUsage(AudioAttributes.USAGE_ALARM)
-                    .build()
-
-                description = "Channel New Keyword Description"
-                setSound(uri, audioAttributes)
-                setShowBadge(true)
-                enableVibration(true)
-            }
-            manager.createNotificationChannel(channel)
-            builder = NotificationCompat.Builder(this, id)
-        } else {
-            builder = NotificationCompat.Builder(this)
-        }
+        val builder = makeBuilder(id, name, manager)
         val intent = Intent(this, MainActivity::class.java)
         val pendingIntent = PendingIntent
             .getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
 
-        builder.run {
+        checkPermission()
+        builder.apply {
             setSmallIcon(R.drawable.heart_on)
             setWhen(System.currentTimeMillis())
             setContentTitle("키워드 알림")
@@ -139,8 +103,34 @@ class MainActivity : AppCompatActivity() {
             setContentIntent(pendingIntent)
             setAutoCancel(true)
             setOngoing(false)
+        }.also { manager.notify(77, it.build()) }
+    }
+
+    private fun makeBuilder(
+        id: String,
+        name: String,
+        manager: NotificationManager
+    ): NotificationCompat.Builder {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val importance = NotificationManager.IMPORTANCE_DEFAULT
+            val uri: Uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+            val audioAttributes = AudioAttributes.Builder().run {
+                setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                setUsage(AudioAttributes.USAGE_ALARM)
+                build()
+            }
+            val channel = NotificationChannel(id, name, importance).apply {
+                description = "Channel New Keyword Description"
+                setSound(uri, audioAttributes)
+                setShowBadge(true)
+                enableVibration(true)
+            }
+
+            manager.createNotificationChannel(channel)
+            return NotificationCompat.Builder(this, id)
+        } else {
+            return NotificationCompat.Builder(this)
         }
-        manager.notify(77, builder.build())
     }
 
     private fun checkPermission() {
@@ -155,11 +145,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initRetrunButton() {
-        binding.mainRecyclerView.setOnScrollChangeListener { v, _, scrollY, _, oldScrollY ->
-            val fadeInAnim = AnimationUtils.loadAnimation(this, R.anim.fade_in)
-            val fadeOutAnim = AnimationUtils.loadAnimation(this, R.anim.fade_out)
+        val fadeInAnim = AnimationUtils.loadAnimation(this, R.anim.fade_in)
+        val fadeOutAnim = AnimationUtils.loadAnimation(this, R.anim.fade_out)
+        val recycler = binding.mainRecyclerView
+        val fabReturn = binding.fabMainRetrunToTop
 
-            with(binding.fabMainRetrunToTop) {
+        recycler.setOnScrollChangeListener { v, _, scrollY, _, oldScrollY ->
+            with(fabReturn) {
                 if (scrollY > oldScrollY && visibility == View.GONE) {
                     startAnimation(fadeInAnim)
                     visibility = View.VISIBLE
@@ -169,30 +161,43 @@ class MainActivity : AppCompatActivity() {
                     startAnimation(fadeOutAnim)
                     visibility = View.GONE
                 }
+                setOnClickListener {
+                    recycler.smoothScrollToPosition(0)
+                }
             }
-        }
-        binding.fabMainRetrunToTop.setOnClickListener {
-            binding.mainRecyclerView.smoothScrollToPosition(0)
         }
     }
 
     override fun onBackPressed() {
-        var builder = AlertDialog.Builder(this)
-        val listener = object : DialogInterface.OnClickListener {
-            override fun onClick(dialog: DialogInterface?, which: Int) {
-                when (which) {
-                    DialogInterface.BUTTON_POSITIVE -> finish()
-                    DialogInterface.BUTTON_NEGATIVE -> return
-                }
+        buildDialog(
+            "종료",
+            "종료 하시겠습니까?",
+            "종료",
+            "취소"
+        ) {
+            finish()
+        }
+    }
+
+    private fun buildDialog(
+        title: String,
+        msg: String,
+        positive: String,
+        negative: String,
+        positiveAction: () -> Unit
+    ) {
+        val listener = DialogInterface.OnClickListener { _, which ->
+            if (which == DialogInterface.BUTTON_POSITIVE) {
+                positiveAction()
             }
         }
 
-        with(builder) {
-            setTitle("종료")
-            setMessage("종료 하시겠습니까?")
+        AlertDialog.Builder(this).run {
+            setTitle(title)
+            setMessage(msg)
             setIcon(R.drawable.chat)
-            setPositiveButton("종료", listener)
-            setNegativeButton("취소", listener)
+            setPositiveButton(positive, listener)
+            setNegativeButton(negative, listener)
             show()
         }
     }

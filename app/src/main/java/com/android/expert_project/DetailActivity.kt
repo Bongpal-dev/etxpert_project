@@ -54,15 +54,18 @@ class DetailActivity : AppCompatActivity() {
 
         heart.setOnClickListener {
             Items.findByUser(user).run {
-                heartOn = heartOn.not()
-                checkHeart(this, binding.btnDetailHeart)
-
                 if (heartOn) {
                     Items.plusHeart(user)
-                    Snackbar.make(binding.root, "관심 목록에 추가되었습니다.", Snackbar.LENGTH_SHORT).show()
+                    Snackbar.make(
+                        binding.root,
+                        "관심 목록에 추가되었습니다.",
+                        Snackbar.LENGTH_SHORT
+                    ).show()
                 } else {
                     Items.minusHeart(user)
                 }
+                heartOn = heartOn.not()
+                checkHeart(this, binding.btnDetailHeart)
             }
         }
     }

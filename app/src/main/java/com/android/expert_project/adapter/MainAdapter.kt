@@ -19,7 +19,7 @@ class MainAdapter(val item: MutableList<Item>) : RecyclerView.Adapter<MainAdapte
     }
 
     interface ItemLongClick {
-        fun longClick(item: Item)
+        fun onLongClick(item: Item, position: Int)
     }
 
     inner class Holder(val binding: MainRecyclerViewBinding) :
@@ -51,11 +51,11 @@ class MainAdapter(val item: MutableList<Item>) : RecyclerView.Adapter<MainAdapte
             heartCount.text = item.heartCount.toString()
             chatCount.text = item.chatCount.toString()
             checkHeart(item, ivHeart)
-            layoutItem.setOnLongClickListener {
-                itemLongClick?.longClick(item)
+            itemView.setOnLongClickListener {
+                itemLongClick?.onLongClick(item, position)
                 true
             }
-            layoutItem.setOnClickListener {
+            itemView.setOnClickListener {
                 itemClick?.onClick(it, position)
             }
         }
